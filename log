@@ -1,0 +1,1 @@
+sort -k1 misc-access.log | awk -F'GET /' '{print $2}' | cut -d' ' -f1 | tr -d '\n'
