@@ -1,0 +1,346 @@
+# RESUIDE Challenge — Full Commands (Step-by-Step)
+
+## 1️⃣ Go to working directory
+
+```bash
+cd ~/Documents
+```
+
+Check downloaded files:
+
+```bash
+ls
+```
+
+You should see something like:
+
+```
+fix.py
+flag.rar
+memory.7z
+```
+
+---
+
+# 2️⃣ Extract the memory dump
+
+The memory dump is compressed.
+
+```bash
+7z e memory.7z
+```
+
+Now check again:
+
+```bash
+ls
+```
+
+You will get:
+
+```
+memory.raw
+fix.py
+flag.rar
+```
+
+---
+
+# 3️⃣ Try extracting the flag archive
+
+```bash
+rar e flag.rar
+```
+
+It will ask for password.
+
+```
+Enter password:
+```
+
+⚠️ Password is not known yet → we will find it using memory forensics.
+
+---
+
+# 4️⃣ Create Python virtual environment
+
+```bash
+python3 -m venv volatile
+```
+
+Activate it:
+
+```bash
+source volatile/bin/activate
+```
+
+---
+
+# 5️⃣ Install Volatility
+
+```bash
+pip install volatility3
+```
+
+---
+
+# 6️⃣ Identify the memory image
+
+```bash
+vol -f memory.raw windows.info
+```
+
+This confirms:
+
+```
+Windows 7
+```
+
+---
+
+# 7️⃣ List running processes
+
+```bash
+vol -f memory.raw windows.pslist
+```
+
+Look for interesting processes.
+
+The walkthrough identifies:
+
+```
+chrome.exe
+```
+
+---
+
+# 8️⃣ Create directory to dump memory
+
+```bash
+mkdir chrome_dum
+```
+
+---
+
+# 9️⃣ Dump memory of Chrome process
+
+Use the PID of chrome (example **2380**).
+
+```bash
+vol -f memory.raw -o chrome_dum windows.memmap --pid 2380 --dump
+```
+
+Now check dumped files.
+
+```bash
+cd chrome_dum
+ls
+```
+
+You will see:
+
+```
+pid.2380.dmp
+```
+
+---
+
+# 🔟 Search for payload
+
+Go back to main directory.
+
+```bash
+cd ..
+```
+
+Search payload inside memory.
+
+```bash
+strings memory.raw | grep PAYLOAD
+```
+
+---
+
+# 11️⃣ Inspect dump contents
+
+```bash
+strings chrome_dum/pid.2380.dmp
+```
+
+Since output is large, filter with **seed**.
+
+```bash
+strings chrome_dum/pid.2380.dmp | grep seed
+```
+
+You will find an encoded string like:
+
+```
+q255eZh-AMESYYCjCxWyzJIKvCjn5GrpBQowaffpZVH
+```
+
+---
+
+# 12️⃣ Use Python to decode password
+
+Create script.
+
+```bash
+nano script.py
+```
+
+Paste:
+
+```python
+s='q255eZh-AMESYYCjCxWyzJIKvCjn5GrpBQowaffpZVH'.strip('"')
+m=len(s)//2
+a=s[:m][::-1]
+b=s[m:]
+
+def rot13(x):
+    return ''.join(
+        chr((ord(c)-65+13)%26+65) if c.isupper() else
+        chr((ord(c)-97+13)%26+97) if c.islower() else c
+        for c in x
+    )
+
+print(a + rot13(b))
+```
+
+Save and exit.
+
+Run it:
+
+```bash
+python3 script.py
+```
+
+You will get password like:
+
+```
+zyWxCjYYSEMa-hZes52qVVXiPwaSTecobDnsScMIU
+```
+
+---
+
+# 13️⃣ Extract clue archive
+
+```bash
+7z e clue.7z
+```
+
+Enter password obtained above.
+
+You will get:
+
+```
+clue.png
+```
+
+---
+
+# 14️⃣ Fix corrupted PNG
+
+Check the script:
+
+```bash
+cat fix.py
+```
+
+Edit the script:
+
+```bash
+nano fix.py
+```
+
+Code inside:
+
+```python
+import zlib
+d = open("clue.png","rb").read()
+i = next(i for i in range(len(d)) if d[i]==0x78 and d[i+1] in (1,156,218))
+print(zlib.decompress(d[i:]).decode())
+```
+
+Run it:
+
+```bash
+python3 fix.py
+```
+
+This reveals **first half of the flag**.
+
+---
+
+# 15️⃣ Get environment variables
+
+Search environment variables.
+
+```bash
+strings memory.raw | grep -i env
+```
+
+You will see encoded values.
+
+Decode using **ROT13** (CyberChef).
+
+---
+
+# 16️⃣ Combine both parts
+
+Final flag:
+
+```
+CTF{h34p_fr4gm3nts_3nvR_4n4ly5i5}
+```
+
+---
+
+# Quick Command List (All Commands Only)
+
+```bash
+cd ~/Documents
+ls
+
+7z e memory.7z
+ls
+
+rar e flag.rar
+
+python3 -m venv volatile
+source volatile/bin/activate
+pip install volatility3
+
+vol -f memory.raw windows.info
+vol -f memory.raw windows.pslist
+
+mkdir chrome_dum
+vol -f memory.raw -o chrome_dum windows.memmap --pid 2380 --dump
+
+strings memory.raw | grep PAYLOAD
+strings chrome_dum/pid.2380.dmp
+strings chrome_dum/pid.2380.dmp | grep seed
+
+nano script.py
+python3 script.py
+
+7z e clue.7z
+
+cat fix.py
+nano fix.py
+python3 fix.py
+
+strings memory.raw | grep -i env
+```
+
+---
+
+✅ **Final Flag**
+
+```
+CTF{h34p_fr4gm3nts_3nvR_4n4ly5i5}
+```
+
+---
+
+If you want, I can also show you the **shortest exam method (only ~6 commands) to solve the RESUIDE challenge**, which will save you time during your **Cyber Defense Lab practical**.
