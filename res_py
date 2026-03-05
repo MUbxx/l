@@ -1,0 +1,13 @@
+def rot13(x):
+    return ''.join(
+        chr((ord(c)-65+13)%26+65) if c.isupper() else
+        chr((ord(c)-97+13)%26+97) if c.islower() else c
+        for c in x
+    )
+
+import sys
+
+a = ""
+b = sys.argv[1]
+
+print(a + rot13(b))
