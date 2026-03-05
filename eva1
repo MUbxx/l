@@ -1,0 +1,228 @@
+# EVAPORATED Challenge – Full Commands (Step-by-Step)
+
+## 1. Download the challenge file
+
+Download the challenge from the OneDrive link provided in the challenge page.
+
+After downloading move to the directory.
+
+```bash
+cd ~/Documents
+```
+
+---
+
+# 2. Extract the challenge archive
+
+The file provided is **evaporated.7z**
+
+List files:
+
+```bash
+ls
+```
+
+Extract the archive:
+
+```bash
+7z e evaporated.7z
+```
+
+After extraction you will get:
+
+```
+memory.raw
+```
+
+---
+
+# 3. Install Volatility (required for memory forensics)
+
+Create Python virtual environment.
+
+```bash
+python3 -m venv volatile
+```
+
+Activate the environment:
+
+```bash
+source volatile/bin/activate
+```
+
+Install Volatility 3:
+
+```bash
+pip install volatility3
+```
+
+---
+
+# 4. Identify the memory image information
+
+Check OS and profile information:
+
+```bash
+vol -f memory.raw windows.info
+```
+
+This shows:
+
+* OS → Windows 7
+* Kernel info
+* System details
+
+---
+
+# 5. List running processes
+
+```bash
+vol -f memory.raw windows.pslist
+```
+
+Look for suspicious processes.
+
+In this challenge the suspicious ones are:
+
+```
+cmd.exe
+powershell.exe
+```
+
+---
+
+# 6. Extract command line history
+
+Check executed commands in memory:
+
+```bash
+vol -f memory.raw windows.cmdline
+```
+
+You will see **a PowerShell encoded command**.
+
+Example:
+
+```
+powershell -enc <base64_string>
+```
+
+---
+
+# 7. Decode the encoded PowerShell string
+
+Copy the base64 string.
+
+Decode using **CyberChef** or terminal.
+
+Example using terminal:
+
+```bash
+echo "<base64_string>" | base64 -d
+```
+
+This reveals **the first part of the flag**.
+
+---
+
+# 8. Look for persistence mechanisms
+
+The attacker created a **scheduled task called AdobeUpdater**.
+
+Search for it.
+
+```bash
+strings memory.raw | grep schtasks
+```
+
+You should see something like:
+
+```
+schtasks.exe /create /tn "defender monitor"
+```
+
+---
+
+# 9. Search for updater component
+
+```bash
+strings memory.raw | grep -i adobeupdater
+```
+
+This reveals the **second part of the flag**.
+
+---
+
+# 10. Search for artifacts
+
+```bash
+strings memory.raw | grep -i artifact
+```
+
+This returns:
+
+```
+Artifact tag: R....
+Artifact tag: D....
+Artifact tag: R....
+```
+
+From this output you obtain **the third part of the flag**.
+
+---
+
+# 11. Check environment variables
+
+The final part of the flag is stored in environment variables.
+
+```bash
+vol -f memory.raw windows.envars
+```
+
+Search inside the output for flag text.
+
+---
+
+# 12. Combine all parts
+
+Combine the parts recovered from:
+
+1. PowerShell encoded command
+2. AdobeUpdater persistence
+3. Artifact tags
+4. Environment variables
+
+Final flag format:
+
+```
+CTF{...complete_flag...}
+```
+
+---
+
+# Complete Command List (Quick Version)
+
+If you want **only commands without explanation**:
+
+```bash
+cd ~/Documents
+ls
+7z e evaporated.7z
+
+python3 -m venv volatile
+source volatile/bin/activate
+pip install volatility3
+
+vol -f memory.raw windows.info
+vol -f memory.raw windows.pslist
+vol -f memory.raw windows.cmdline
+
+echo "<base64_string>" | base64 -d
+
+strings memory.raw | grep schtasks
+strings memory.raw | grep -i adobeupdater
+strings memory.raw | grep -i artifact
+
+vol -f memory.raw windows.envars
+```
+
