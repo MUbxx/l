@@ -7,3 +7,4 @@ memory.raw windows.cmdline
 strings <filename.raw> | grep schtasks
 strings -el <filename.raw> | grep -i adobeupdater
 strings -el <filename.raw> | grep -i artifact
+vol -f memory.raw windows.envars
